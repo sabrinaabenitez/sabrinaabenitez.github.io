@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Sabrina Benitez" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
+    <title>Project 1: Risk Factors for Heart Failure</title>
+    <meta name="generator" content="Hugo 0.79.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="../../"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="../../post/">BLOG</a></li>
+        
+        <li><a href="../../projects/">PROJECTS</a></li>
+        
+        <li><a href="../../resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="../../project/project1/">Project 1: Risk Factors for Heart Failure</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         January 1, 0001 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="introduction" class="section level4">
+<h4>Introduction</h4>
+<p>Title: Exploration of the relationship between heart failure and potential risk factors.</p>
+<p>This project will explore the incidence of death due to heart failure and potential associations with risk factors, such as age, diabetes, or high blood pressure. This dataset was acquired from kaggle.com. The dataset contains various clinically assessed risk factors, such as smoker status and age. This data exploration is of interest to me, personally, because many members of my family suffer from cardiovascular disease. Hopefully, this project will allow me to gain better insight into the predictors of heart failure and potentially lead to lifestyle changes for myself and my family.</p>
+<p>Before beginning analysis, minor changes were made to the original dataset in order to make analysis run more smoothly. The initial dataset did not have a patient ID variable. This was inputted manually in Excel before uploading the dataset into R. There were two variables in this dataset that are not of interest to my project due to their lack of clear definition. After searching through the database, I could not properly interpret the data based on the definitions given. For this reason, the &quot;sex&quot; and &quot;time&quot; variables will be removed from the dataset. Finally, the categorical variables in this dataset were coded as &quot;Yes&quot;=1 and &quot;No&quot;=0. For example, the column for diabetes diagnosis has values of &quot;1&quot; or &quot;0&quot;, depending on whether or not that particular patient was diabetic. I converted the binary code into &quot;Yes&quot; and &quot;No&quot; so that I could create categorical variables.</p>
+<pre class="r"><code>library(tidyverse)
+library(dplyr)
+library(ggplot2)
+heart &lt;- read.csv(file = &quot;heart_failure_clinical_records_dataset.csv&quot;)
+heart &lt;- heart %&gt;% rename_all(function(x) str_replace(x, &quot;_&quot;, 
+    &quot;&quot;)) %&gt;% rename_all(function(x) str_replace(x, &quot;_&quot;, &quot;&quot;))
+glimpse(heart)</code></pre>
+<pre><code>## Rows: 299
+## Columns: 14
+## $ ID                      &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14…
+## $ age                     &lt;dbl&gt; 75, 55, 65, 50, 65, 90, 75, 60, 65, 80, 75, 6…
+## $ anaemia                 &lt;int&gt; 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, …
+## $ creatininephosphokinase &lt;int&gt; 582, 7861, 146, 111, 160, 47, 246, 315, 157, …
+## $ diabetes                &lt;int&gt; 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, …
+## $ ejectionfraction        &lt;int&gt; 20, 38, 20, 20, 20, 40, 15, 60, 65, 35, 38, 2…
+## $ highbloodpressure       &lt;int&gt; 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, …
+## $ platelets               &lt;dbl&gt; 265000, 263358, 162000, 210000, 327000, 20400…
+## $ serumcreatinine         &lt;dbl&gt; 1.90, 1.10, 1.30, 1.90, 2.70, 2.10, 1.20, 1.1…
+## $ serumsodium             &lt;int&gt; 130, 136, 129, 137, 116, 132, 137, 131, 138, …
+## $ sex                     &lt;int&gt; 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, …
+## $ smoking                 &lt;int&gt; 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, …
+## $ time                    &lt;int&gt; 4, 6, 7, 7, 8, 8, 10, 10, 10, 10, 10, 10, 11,…
+## $ DEATHEVENT              &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, …</code></pre>
+<pre class="r"><code>heart &lt;- heart[-c(11, 13)]
+heart &lt;- heart %&gt;% mutate_at(c(&quot;anaemia&quot;, &quot;diabetes&quot;, &quot;highbloodpressure&quot;, 
+    &quot;smoking&quot;, &quot;DEATHEVENT&quot;), function(x) ifelse(x == 0, &quot;No&quot;, 
+    &quot;Yes&quot;))
+head(heart)</code></pre>
+<pre><code>##   ID age anaemia creatininephosphokinase diabetes ejectionfraction
+## 1  1  75      No                     582       No               20
+## 2  2  55      No                    7861       No               38
+## 3  3  65      No                     146       No               20
+## 4  4  50     Yes                     111       No               20
+## 5  5  65     Yes                     160      Yes               20
+## 6  6  90     Yes                      47       No               40
+##   highbloodpressure platelets serumcreatinine serumsodium smoking DEATHEVENT
+## 1               Yes    265000             1.9         130      No        Yes
+## 2                No    263358             1.1         136      No        Yes
+## 3                No    162000             1.3         129     Yes        Yes
+## 4                No    210000             1.9         137      No        Yes
+## 5                No    327000             2.7         116      No        Yes
+## 6               Yes    204000             2.1         132     Yes        Yes</code></pre>
+</div>
+<div id="tidying-rearranging-widelong" class="section level4">
+<h4>1. Tidying: Rearranging Wide/Long</h4>
+<p>Fortunately, the heart failure prediction dataset was tidy initially. For my project, I will untidy the dataset, specifically by combining the categorical risk factors into one column. There incidence will be determined as a &quot;Yes&quot; or &quot;No&quot; in the new &quot;Incidence&quot; column. The data will then be tidy-ed into a tidy dataset once again.</p>
+<pre class="r"><code>heart_untidy &lt;- heart %&gt;% pivot_longer(c(&quot;anaemia&quot;, &quot;diabetes&quot;, 
+    &quot;highbloodpressure&quot;, &quot;smoking&quot;), names_to = &quot;risk_factor&quot;, 
+    values_to = &quot;Incidence&quot;)
+head(heart_untidy)</code></pre>
+<pre><code>## # A tibble: 6 x 10
+##      ID   age creatininephosp… ejectionfraction platelets serumcreatinine
+##   &lt;int&gt; &lt;dbl&gt;            &lt;int&gt;            &lt;int&gt;     &lt;dbl&gt;           &lt;dbl&gt;
+## 1     1    75              582               20   265000              1.9
+## 2     1    75              582               20   265000              1.9
+## 3     1    75              582               20   265000              1.9
+## 4     1    75              582               20   265000              1.9
+## 5     2    55             7861               38   263358.             1.1
+## 6     2    55             7861               38   263358.             1.1
+## # … with 4 more variables: serumsodium &lt;int&gt;, DEATHEVENT &lt;chr&gt;,
+## #   risk_factor &lt;chr&gt;, Incidence &lt;chr&gt;</code></pre>
+<pre class="r"><code>heart_tidy &lt;- heart_untidy %&gt;% pivot_wider(names_from = &quot;risk_factor&quot;, 
+    values_from = &quot;Incidence&quot;)
+head(heart_tidy)</code></pre>
+<pre><code>## # A tibble: 6 x 12
+##      ID   age creatininephosp… ejectionfraction platelets serumcreatinine
+##   &lt;int&gt; &lt;dbl&gt;            &lt;int&gt;            &lt;int&gt;     &lt;dbl&gt;           &lt;dbl&gt;
+## 1     1    75              582               20   265000              1.9
+## 2     2    55             7861               38   263358.             1.1
+## 3     3    65              146               20   162000              1.3
+## 4     4    50              111               20   210000              1.9
+## 5     5    65              160               20   327000              2.7
+## 6     6    90               47               40   204000              2.1
+## # … with 6 more variables: serumsodium &lt;int&gt;, DEATHEVENT &lt;chr&gt;, anaemia &lt;chr&gt;,
+## #   diabetes &lt;chr&gt;, highbloodpressure &lt;chr&gt;, smoking &lt;chr&gt;</code></pre>
+</div>
+<div id="joiningmerging" class="section level4">
+<h4>2. Joining/Merging</h4>
+<p>For this project, I will manually separate my dataset with the common variable &quot;ID&quot;. I will perform a full join, using &quot;ID&quot; to rejoin the separated datasets.</p>
+<pre class="r"><code>heart_part1 &lt;- heart %&gt;% select(&quot;ID&quot;, 2:6)
+head(heart_part1)</code></pre>
+<pre><code>##   ID age anaemia creatininephosphokinase diabetes ejectionfraction
+## 1  1  75      No                     582       No               20
+## 2  2  55      No                    7861       No               38
+## 3  3  65      No                     146       No               20
+## 4  4  50     Yes                     111       No               20
+## 5  5  65     Yes                     160      Yes               20
+## 6  6  90     Yes                      47       No               40</code></pre>
+<pre class="r"><code>heart_part2 &lt;- heart %&gt;% select(&quot;ID&quot;, 7:12)
+head(heart_part2)</code></pre>
+<pre><code>##   ID highbloodpressure platelets serumcreatinine serumsodium smoking DEATHEVENT
+## 1  1               Yes    265000             1.9         130      No        Yes
+## 2  2                No    263358             1.1         136      No        Yes
+## 3  3                No    162000             1.3         129     Yes        Yes
+## 4  4                No    210000             1.9         137      No        Yes
+## 5  5                No    327000             2.7         116      No        Yes
+## 6  6               Yes    204000             2.1         132     Yes        Yes</code></pre>
+<pre class="r"><code>heartnew &lt;- full_join(heart_part1, heart_part2, by = &quot;ID&quot;)
+head(heartnew)</code></pre>
+<pre><code>##   ID age anaemia creatininephosphokinase diabetes ejectionfraction
+## 1  1  75      No                     582       No               20
+## 2  2  55      No                    7861       No               38
+## 3  3  65      No                     146       No               20
+## 4  4  50     Yes                     111       No               20
+## 5  5  65     Yes                     160      Yes               20
+## 6  6  90     Yes                      47       No               40
+##   highbloodpressure platelets serumcreatinine serumsodium smoking DEATHEVENT
+## 1               Yes    265000             1.9         130      No        Yes
+## 2                No    263358             1.1         136      No        Yes
+## 3                No    162000             1.3         129     Yes        Yes
+## 4                No    210000             1.9         137      No        Yes
+## 5                No    327000             2.7         116      No        Yes
+## 6               Yes    204000             2.1         132     Yes        Yes</code></pre>
+</div>
+<div id="wrangling" class="section level4">
+<h4>3. Wrangling</h4>
+<pre class="r"><code>heart %&gt;% group_by(DEATHEVENT) %&gt;% select(-ID) %&gt;% summarize_if(is.numeric, 
+    c(mean = mean, sd = sd, min = min, max = max)) %&gt;% pivot_longer(-DEATHEVENT) %&gt;% 
+    separate(name, into = c(&quot;riskfactor&quot;, &quot;stat&quot;))</code></pre>
+<pre><code>## # A tibble: 48 x 4
+##    DEATHEVENT riskfactor              stat      value
+##    &lt;chr&gt;      &lt;chr&gt;                   &lt;chr&gt;     &lt;dbl&gt;
+##  1 No         age                     mean      58.8 
+##  2 No         creatininephosphokinase mean     540.  
+##  3 No         ejectionfraction        mean      40.3 
+##  4 No         platelets               mean  266657.  
+##  5 No         serumcreatinine         mean       1.18
+##  6 No         serumsodium             mean     137.  
+##  7 No         age                     sd        10.6 
+##  8 No         creatininephosphokinase sd       754.  
+##  9 No         ejectionfraction        sd        10.9 
+## 10 No         platelets               sd     97531.  
+## # … with 38 more rows</code></pre>
+<pre class="r"><code>heart %&gt;% group_by(highbloodpressure) %&gt;% select(-ID) %&gt;% summarize_if(is.numeric, 
+    c(mean = mean, sd = sd, min = min, max = max)) %&gt;% pivot_longer(-highbloodpressure) %&gt;% 
+    separate(name, into = c(&quot;riskfactor&quot;, &quot;stat&quot;))</code></pre>
+<pre><code>## # A tibble: 48 x 4
+##    highbloodpressure riskfactor              stat      value
+##    &lt;chr&gt;             &lt;chr&gt;                   &lt;chr&gt;     &lt;dbl&gt;
+##  1 No                age                     mean      60.0 
+##  2 No                creatininephosphokinase mean     632.  
+##  3 No                ejectionfraction        mean      37.9 
+##  4 No                platelets               mean  259769.  
+##  5 No                serumcreatinine         mean       1.40
+##  6 No                serumsodium             mean     137.  
+##  7 No                age                     sd        12.0 
+##  8 No                creatininephosphokinase sd      1019.  
+##  9 No                ejectionfraction        sd        11.5 
+## 10 No                platelets               sd    104292.  
+## # … with 38 more rows</code></pre>
+<pre class="r"><code>heartcprisk &lt;- heart %&gt;% mutate(creatininephosphokinaserisk = case_when(creatininephosphokinase &gt; 
+    120 ~ &quot;abnormal&quot;, creatininephosphokinase &lt; 120 ~ &quot;normal&quot;))
+heartcprisk %&gt;% select(diabetes, age, creatininephosphokinase, 
+    creatininephosphokinaserisk) %&gt;% filter(diabetes == &quot;Yes&quot;) %&gt;% 
+    arrange(creatininephosphokinase) %&gt;% count(creatininephosphokinaserisk)</code></pre>
+<pre><code>##   creatininephosphokinaserisk  n
+## 1                    abnormal 98
+## 2                      normal 27</code></pre>
+<pre class="r"><code>98/(98 + 27)</code></pre>
+<pre><code>## [1] 0.784</code></pre>
+<pre class="r"><code>heartcprisk %&gt;% select(diabetes, age, creatininephosphokinase, 
+    creatininephosphokinaserisk) %&gt;% filter(diabetes == &quot;No&quot;) %&gt;% 
+    arrange(creatininephosphokinase) %&gt;% count(creatininephosphokinaserisk)</code></pre>
+<pre><code>##   creatininephosphokinaserisk   n
+## 1                    abnormal 124
+## 2                      normal  50</code></pre>
+<pre class="r"><code>124/(124 + 50)</code></pre>
+<pre><code>## [1] 0.7126437</code></pre>
+<pre class="r"><code>heartcprisk %&gt;% filter(creatininephosphokinaserisk == &quot;abnormal&quot;) %&gt;% 
+    summarize(mean(creatininephosphokinase))</code></pre>
+<pre><code>##   mean(creatininephosphokinase)
+## 1                      756.4459</code></pre>
+<pre><code>The data revels that the average age for those who died as a result of heart failure was 65 and those who did not was 58. Perhaps this suggests that older age groups, along with other risk factors, are more likely to die due to heart disease. This can be supported by the finding that the mean values for creatinine phosphokinase levels, ejection fraction, and platelet count, are at abnormal levels for those who suffered a death event. Similar findings are presented when the data is grouped based on high blood pressure status. The mean age is greater for those suffering from high blood pressure, suggesting age as a risk factor. However, this does not carry over to creatinine phosphokinase levels, which are lower in the high blood pressure group. The mean ejection fractior is higher in the high blood pressure group, which is expected given the physiology of the heart. 
+A new variable was created in order to assess the risk level posed by creatinine phoshokinase levels. This was based of the normal creatinine phoshokinase level, less than 120 mu/L. The average creatinine phosphokinase level for those in the abnormal group was 756 mu/L. Many people in my family suffer from diabetes, so I chose to assess the abnormality of creatinine phosphokinase levels between those who were or were not diabetic. Not surprisingly, there was a higher percentage of patients with abnormal creatinine phosphotase levels that were diabetic(78%) than those who were non-diabetic (71%).</code></pre>
+</div>
+<div id="visualizing" class="section level4">
+<h4>4. Visualizing</h4>
+<pre class="r"><code>ggplot(heart, aes(x = age, y = platelets, color = DEATHEVENT)) + 
+    geom_point(size = 1) + scale_color_manual(values = c(&quot;Light Green&quot;, 
+    &quot;Light Blue&quot;)) + ggtitle(&quot;Platelet Count vs Age and Fatality&quot;) + 
+    geom_smooth(method = &quot;lm&quot;, se = F) + ylab(&quot;Platelet count (kiloplatelets/L)&quot;) + 
+    xlab(&quot;Age (years)&quot;) + scale_x_continuous(breaks = seq(from = 40, 
+    to = 95, by = 10)) + theme_minimal()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot(heart, aes(x = highbloodpressure, y = ejectionfraction, 
+    fill = highbloodpressure)) + geom_bar(aes(y = ejectionfraction), 
+    stat = &quot;summary&quot;, fun = mean) + geom_errorbar(stat = &quot;summary&quot;, 
+    aes(x = highbloodpressure, y = ejectionfraction), width = 0.2) + 
+    ggtitle(&quot;Ejection Fraction (%) vs High Blood Pressure and Smoker Status &quot;) + 
+    ylab(&quot;Ejection Fraction(%)&quot;) + xlab(&quot;High Blood Pressure&quot;) + 
+    scale_fill_brewer(palette = &quot;Oranges&quot;) + facet_wrap(~smoking) + 
+    theme_minimal()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>heart %&gt;% select_if(is.numeric) %&gt;% select(-ID) %&gt;% cor %&gt;% as.data.frame %&gt;% 
+    rownames_to_column(&quot;varA&quot;) %&gt;% pivot_longer(-1, names_to = &quot;varB&quot;, 
+    values_to = &quot;correlation&quot;) %&gt;% ggplot(aes(varA, varB, fill = correlation)) + 
+    geom_tile() + ggtitle(&quot;Correlation of Heart Disease Risk Factors&quot;) + 
+    scale_fill_gradient2(low = &quot;white&quot;, mid = &quot;red&quot;, high = &quot;dark red&quot;) + 
+    geom_text(aes(label = round(correlation, 2)), color = &quot;white&quot;, 
+        size = 4) + xlab(&quot;&quot;) + ylab(&quot;&quot;) + theme(axis.text.x = element_text(angle = 45, 
+    hjust = 1))</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-6-3.png" width="672" style="display: block; margin: auto;" /> The first graph explores the relationship between age and platelet count, whether or not a patient passed away due to heart disease. As age increases for patients who are living, the platelet count trends downward. As age increases for patients that ultimately pass away due to heart disease, platelet counts increase. An increased platelet count increases the likelihood of forming a blood clot. This is consistent with the findings in the wrangling section, as age is a risk factor for dying of heart disease. The bar graph explores the relationship between ejection fraction and high blood pressure in smokers and non smokers. In the non-smoking group, the ejection rate between those with and without high blood pressure was virtually the same. However, in the smoking group, the ejection rate was slightly higher for those with high blood pressure. It appears that this is not a significant difference. This differs from what I expected to find, which was that the ejection rate in smokers would be lower due to the vasoconstrictive effects of smoking compounded with high blood pressure. Finally, I created a correlation heat map to assess the correlation of incidence between two different risk factors. This map reveals that there are very weak correlations between the numeric variables. No definitive conclusions can be drawn from this map.</p>
+</div>
+<div id="dimensionality-reduction" class="section level4">
+<h4>5. Dimensionality Reduction</h4>
+<pre class="r"><code>library(cluster)
+pam_dat &lt;- heart %&gt;% select(ejectionfraction, creatininephosphokinase, 
+    age)
+sil_width &lt;- vector()
+for (i in 2:10) {
+    pam_fit &lt;- pam(pam_dat, k = i)
+    sil_width[i] &lt;- pam_fit$silinfo$avg.width
+}
+ggplot() + geom_line(aes(x = 1:10, y = sil_width)) + scale_x_continuous(name = &quot;k&quot;, 
+    breaks = 1:10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pam1 &lt;- pam_dat %&gt;% scale %&gt;% pam(k = 2)
+pam1</code></pre>
+<pre><code>## Medoids:
+##      ID ejectionfraction creatininephosphokinase        age
+## [1,] 72       -0.2605537             0.000165451 -0.2382462
+## [2,] 44        1.0068904            -0.468767542  0.9387378
+## Clustering vector:
+##   [1] 1 1 1 1 1 2 1 2 2 2 2 1 1 1 1 2 2 1 1 1 1 1 1 2 1 2 2 2 1 2 2 2 1 1 2 1 2
+##  [38] 2 1 1 1 1 2 2 2 1 1 1 1 1 1 1 1 2 1 2 1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 1 1 2
+##  [75] 1 1 2 1 2 1 2 2 1 2 1 1 1 2 1 1 2 1 1 1 1 2 1 2 1 1
+##  [ reached getOption(&quot;max.print&quot;) -- omitted 199 entries ]
+## Objective function:
+##    build     swap 
+## 1.295640 1.256373 
+## 
+## Available components:
+##  [1] &quot;medoids&quot;    &quot;id.med&quot;     &quot;clustering&quot; &quot;objective&quot;  &quot;isolation&quot; 
+##  [6] &quot;clusinfo&quot;   &quot;silinfo&quot;    &quot;diss&quot;       &quot;call&quot;       &quot;data&quot;</code></pre>
+<pre class="r"><code>finalpam &lt;- pam_dat %&gt;% mutate(cluster = as.factor(pam1$clustering))
+ggplot(finalpam, aes(x = creatininephosphokinase, y = ejectionfraction, 
+    color = cluster)) + geom_point() + ggtitle(&quot;Cluster Visualization&quot;) + 
+    xlab(&quot;Creatinine Phosphokinase mu/L&quot;) + ylab(&quot;Ejection Fraction (%)&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-7-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>heart %&gt;% slice(pam1$id.med)</code></pre>
+<pre><code>##   ID age anaemia creatininephosphokinase diabetes ejectionfraction
+## 1 72  58      No                     582      Yes               35
+## 2 44  72      No                     127      Yes               50
+##   highbloodpressure platelets serumcreatinine serumsodium smoking DEATHEVENT
+## 1                No    122000             0.9         139     Yes         No
+## 2               Yes    218000             1.0         134      No         No</code></pre>
+<pre class="r"><code>plot(pam1, which = 2)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-7-3.png" width="672" style="display: block; margin: auto;" /> I decided to use PAM in order to conduct a cluster analysis. I chose the variables ejectionfraction, creatininephosphokinase, and age. These are risk factors that I have explored previously and I have found that age increases the occurence of other risk factors of heart disease. I chose to use 2 clusters, as is supported by the findings of the silhouette plot. The silhouette width is .3, which indicates that the structure is weak and could be artificial. I continued with k=2 and plotted the two different clusters in a scatter plot. Not surprisingly, this did not produce exciting results. There was not a great distance between the clusters. Within the clusters, the datapoints were not tight together. The two mediods differed from each other in most respects, but both were diabetic. Due to the results of the silhouette width, it was not surprising that there were no signficant findings in my cluster analysis. Perhaps this is due to my variables of choice. Future analysis can include a variable for a risk-factor score. That way, we can compare risk factor readings to a specific risk-factor score instead of risk-factors compared to each other.</p>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="../../js/docs.min.js"></script>
+<script src="../../js/main.js"></script>
+
+<script src="../../js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

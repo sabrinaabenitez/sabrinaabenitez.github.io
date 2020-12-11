@@ -1,0 +1,222 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "SDS348" 
+date: '11/25/20'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse)
+```
+
+##Introduction
+This project will explore the incidence of death due to heart failure and potential associations with risk factors, such as serum creatinine and serum sodium levels. This dataset was acquired from kaggle.com and contains 299 observations. The dataset contains various clinically assessed risk factors, such as smoker status and diabetic status. This data exploration is of interest to me, personally, because many members of my family suffer from cardiovascular disease. Hopefully, this project will allow me to gain better insight into the predictors of heart failure and potentially lead to lifestyle changes for myself and my family. Before beginning analysis, minor changes were made to the original dataset in order to make analysis run more smoothly. The initial dataset did not have a patient ID variable. This was inputted manually in Excel before uploading the dataset into R. There were two variables in this dataset that are not of interest to my project due to their lack of clear definition. Finally, some categorical variables in this dataset, such as diabetic and smoker status, were coded as "Yes"=1 and "No"=0. 
+```{R}
+library(dplyr)
+library(tidyverse)
+library(survival)
+library(sandwich)
+library(lmtest)
+library(ggplot2)
+library(glmnet)
+library(vegan)
+
+hearts <- read.csv(file = 'heart_failure_clinical_records_dataset.csv')
+hearts <- hearts %>% rename_all(function(x)str_replace(x,"_","")) %>% rename_all(function(x)str_replace(x,"_",""))
+hearts <- hearts[-c(11,13)]
+hearts <- hearts %>% mutate_at(c("diabetes","smoking"),function(x)ifelse(x==0, "No","Yes"))
+head(hearts)
+
+```
+
+## MANOVA/ANOVA
+```{R}
+man1 <- manova(cbind(platelets, serumcreatinine, serumsodium) ~ diabetes, data = hearts)
+summary(man1)
+summary.aov(man1)
+library(rstatix)
+diabetic <- hearts$diabetes 
+resp <- hearts %>% select(platelets, serumcreatinine, serumsodium)
+sapply(split(resp,diabetic), mshapiro_test)
+#If any p<.05, stop (assumption violated). 
+```
+For my data, I ran a MANOVA test on the variables of platelet count, serum creatinine levels, and serum sodium levels against a patient's diabetes status. The null hypothesis is that the means of all groups are equal for each response variable. The MANOVA test reveals that we fail to reject the null hypothesis (p=0.09305, F= 2.1583). For an ANOVA test, there is no significant difference between the response variables based on diabetic status (platelet.p=0.1116, serumcreatinine.p=0.4183, serumsodium.p=0.1223). Because there is no significance, I did not run t tests on my response variables. I ran 1 MANOVA and 3 ANOVA tests. I would have ran 3 t tests. The assumptions for a MANOVA test are random samples, independent observations, multivariate normality of DVs, homogeneity of within-group covariance matrices, linear relationships among DVs, no extreme univariate or multivariate outliers, and no multicollinearity. These assumptions are violated in my dataset nased on the mshapiro test (p=8.403361e-20, 1.019495e-16).
+
+##PERMANOVA
+
+```{R}
+library(vegan)
+dists <- hearts %>% select(platelets, serumcreatinine, serumsodium) %>% dist()
+adonis(dists~diabetes, data=hearts)
+
+table(hearts$diabetes)
+SST<- sum(dists^2)/299
+SSW<-hearts%>%group_by(diabetes)%>%select(diabetes, platelets, serumcreatinine, serumsodium)%>%
+  do(d=dist(.[-1],"euclidean"))%>%ungroup()%>% summarize(sum(d[[1]]^2)/174 + sum(d[[2]]^2)/125) %>%pull
+F_obs<-((SST-SSW)/1)/(SSW/297) 
+Fs<-replicate(1000,{
+  new<-hearts%>%mutate(diabetes=sample(diabetes)) 
+  SSW<-new%>%group_by(diabetes)%>%select(diabetes, platelets, serumcreatinine, serumsodium)%>%
+    do(d=dist(.[-1],"euclidean"))%>%ungroup()%>%
+    summarize(sum(d[[1]]^2)/174 + sum(d[[2]]^2)/125)%>%pull
+  ((SST-SSW)/1)/(SSW/297) 
+})
+{hist(Fs,prob = T); abline(v=F_obs, col="blue", add=T)}
+```
+The variables I examined were patient platelet count, serum sodium, and serum creatinine levels. The null hypothesis states that for platelet count, serum sodium and creatinine levels, the mean for diabetic status should be equal. The alternative hypothesis is that there will be a significant difference for at least one variable. The PERMANOVA p value is 0.131, indicating that we fail to reject the null hypothesis. 
+
+##Linear Regression Model   
+    
+```{R}
+set.seed(123)
+data(hearts)
+hearts$ages<- hearts$age - mean(hearts$age)
+hearts$plateletss <- hearts$platelets - mean(hearts$platelets)
+fita <- lm(creatininephosphokinase ~ ages * plateletss * smoking, data = hearts)
+summary(fita)
+
+hearts %>% ggplot(aes(x=ages, y=creatininephosphokinase, color=smoking)) + geom_point() + geom_smooth(method = "lm", se=F)
+
+resids <- fita$residuals
+fitvals <- fita$fitted.values
+ggplot() + geom_point(aes(fitvals, resids)) + geom_hline(yintercept = 0, color = "blue")
+ggplot() + geom_qq(aes(sample = resids)) + geom_qq_line(aes(sample = resids))
+coeftest(fita, vcov = vcovHC(fita))
+```
+I decided to run my linear regression to determine whether the age, smoker status, and platelet count of a patient predicted the creatinine phosphokinase levels. I did not find any significant predictors of creatinine phosphokinase. However, I yield different results once I recompute regression results with robust standard errors. In this case, age is a significant predictor of creatinine phosphokinase levels. For every 1 increase in age, creatinine phosphokinase levels decrease by 9.19. The proportion of the variation in the outcome that my model explains is 0.02077. This reveals that my model is not a good predictor of creatinine phosphokinase levels in these heart disease patients. 
+
+##Bootstrapped errors and linear regression model
+```{R}
+samp <- replicate(5000, {
+boots <- sample_frac(hearts, replace = T)
+fita <- lm(creatininephosphokinase ~ ages * plateletss * smoking, data = boots)
+coef(fita)
+})
+samp %>% t %>% as.data.frame %>% summarize_all(sd)
+```
+When comparing the bootstrapped SEs to the original model, the bootstrapped SEs are smaller except for the interaction between age and yes-smoker status. When comparing the bootstrapped SEs to the adjusted model, the bootstrapped SEs are larger with the exception of age and yes-smoker status.
+
+    
+##Logistic Regression Binary Variable    
+```{R}
+fitb <- glm(DEATHEVENT ~ diabetes + smoking, data = hearts, family = "binomial")
+summary(fitb)
+
+probs <- predict(fitb, type = "response")
+table(predict = as.numeric(probs > 0.5), truth = hearts$DEATHEVENT) %>% addmargins
+
+class_diag<-function(probs,truth){
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  f1=2*(sens*ppv)/(sens+ppv)
+
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE){
+    truth<-as.numeric(truth)-1}
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,f1,auc)
+}
+
+class_diag(probs, hearts$DEATHEVENT)
+
+
+hearts$logit<-predict(fitb,type="link") 
+hearts <- hearts %>% mutate(deatheventnew = case_when(DEATHEVENT==0 ~ "No Death", DEATHEVENT==1 ~ "Death"))
+hearts%>%ggplot()+geom_density(aes(logit,color= deatheventnew,fill= deatheventnew), alpha=.4)+
+  theme(legend.position=c(.95,.95))+geom_vline(xintercept=0)+xlab("logit (log-odds)")+
+  geom_rug(aes(logit,color= deatheventnew))
+
+library(plotROC)
+ROCplot <- ggplot(hearts) + geom_roc(aes(d = DEATHEVENT, m = probs),n.cuts = 0)
+ROCplot
+calc_auc(ROCplot)
+
+```
+For this model, I wanted to determine if diabetes or smoking led to a death event in a patient. While controlling for diabetes or for smoker status, neither significantly changed the log odds of a death event in a patient. For this model, the accuracy is 0.6789298, the sensitivity is 0, and the specificity is 1. The AUC is 0.514881, which we can tell is not a good predictor. The calculated AUC and the AUC value from the ROC plot are similar The ROC plot curve does not indicate that this model is good.
+
+##Logistic regression on binary response variable from all variables
+
+```{R}
+heartie <- hearts[-13:-16 ]
+fitss <- glm(DEATHEVENT ~., data= heartie, family = "binomial")
+summary(fitss)
+probsss <- predict(fitss, type = "response")
+table(predict = as.numeric(probsss > 0.5), truth = heartie$DEATHEVENT) %>% addmargins
+class_diag(probsss, heartie$DEATHEVENT)
+
+
+set.seed(1234)
+k = 10
+data <- heartie[sample(nrow(heartie)), ]
+folds <- cut(seq(1:nrow(heartie)), breaks = k, labels = F)
+diags <- NULL
+for (i in 1:k) {
+train <- data[folds != i, ]
+test <- data[folds == i, ]
+truth <- test$DEATHEVENT
+fitc <- glm(DEATHEVENT ~ ., data = train, family = "binomial")
+probss <- predict(fitc, newdata = test, type = "response")
+diags <- rbind(diags, class_diag(probss, truth))
+}
+summarize_all(diags, mean)
+
+x <- -model.matrix(fitss)
+y <- as.matrix(heartie$DEATHEVENT)
+cv <- cv.glmnet(x, y, family = "binomial")
+lasso1 <- glmnet(x, y, , family = "binomial", lambda = cv$lambda.1se)
+coef(lasso1)
+
+set.seed(1234)
+k = 10
+datasss <- heartie[sample(nrow(heartie)), ]
+folds <- cut(seq(1:nrow(heartie)), breaks = k, labels = F)
+diags <- NULL
+for (i in 1:k) {
+train <- datasss[folds != i, ]
+test <- datasss[folds == i, ]
+truth <- test$DEATHEVENT
+fitd <- glm(DEATHEVENT ~ age + ejectionfraction + serumcreatinine + serumsodium, data = train, family = "binomial")
+probstwo <- predict(fitd, newdata = test, type = "response")
+diags <- rbind(diags, class_diag(probstwo, truth))
+}
+summarize_all(diags, mean)
+```
+The first logistic regression compares the binary variable DEATHEVENT to all variables in the dataset. The in-sample classification diagnostics for the logistic regression show that the accuracy is 0.8394649, the sensitivty is 0.6875, the specificity is 0.91133, the precision is 0.7857143, and the AUC is 0.9012726. This AUC value shows that the model is good. Next, a 10-fold CV was ran on this model and the accuracy is 0.8128736, the sensitivty is 0.6694517, the specificity is 0.880392, the precision is 0.7332723, and the AUC is 0.8861487.The new AUC value still shows that the model is good. The in-sample classification diagnostics are generally larger than the 10-fold diagnostics. Next, a LASSO was performed on the in-sample model and the variables of age, ejection fraction, serum creatinine, and serum sodium were retained. A 10-fold CV was ran on a model with only the variables that the LASSO selected. This model showed that the accuracy is 0.7558621, the sensitivty is 0.4425794, the specificity is 0.9076756, the precision is 0.6992308, and the AUC is 0.7792773. The AUC for this model is not as good as the previous two models and is the smallest value. The best AUC value is from the in-sample model(0.9012726). The second best is from the first 10-fold CV model (0.8861487).
+
+...
+

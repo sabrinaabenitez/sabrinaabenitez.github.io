@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Chris Turner</title>
+    <link>/project/</link>
+    <description>Recent content in Projects on Chris Turner</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Project 1: Risk Factors for Heart Failure</title>
+      <link>/project/project1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Introduction Title: Exploration of the relationship between heart failure and potential risk factors.
+This project will explore the incidence of death due to heart failure and potential associations with risk factors, such as age, diabetes, or high blood pressure. This dataset was acquired from kaggle.com. The dataset contains various clinically assessed risk factors, such as smoker status and age. This data exploration is of interest to me, personally, because many members of my family suffer from cardiovascular disease.</description>
+    </item>
+    
+    <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>Introduction This project will explore the incidence of death due to heart failure and potential associations with risk factors, such as serum creatinine and serum sodium levels. This dataset was acquired from kaggle.com and contains 299 observations. The dataset contains various clinically assessed risk factors, such as smoker status and diabetic status. This data exploration is of interest to me, personally, because many members of my family suffer from cardiovascular disease.</description>
+    </item>
+    
+  </channel>
+</rss>

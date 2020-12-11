@@ -1,0 +1,123 @@
+---
+title: 'Project 1: Risk Factors for Heart Failure'
+author: "Sabrina Benitez"
+date: '10/18/2020'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+
+#### Introduction
+
+Title: Exploration of the relationship between heart failure and potential risk factors. 
+
+This project will explore the incidence of death due to heart failure and potential associations with risk factors, such as age, diabetes, or high blood pressure. This dataset was acquired from kaggle.com. The dataset contains various clinically assessed risk factors, such as smoker status and age. This data exploration is of interest to me, personally, because many members of my family suffer from cardiovascular disease. Hopefully, this project will allow me to gain better insight into the predictors of heart failure and potentially lead to lifestyle changes for myself and my family.
+
+Before beginning analysis, minor changes were made to the original dataset in order to make analysis run more smoothly. The initial dataset did not have a patient ID variable. This was inputted manually in Excel before uploading the dataset into R. There were two variables in this dataset that are not of interest to my project due to their lack of clear definition. After searching through the database, I could not properly interpret the data based on the definitions given. For this reason, the "sex" and "time" variables will be removed from the dataset. Finally, the categorical variables in this dataset were coded as "Yes"=1 and "No"=0. For example, the column for diabetes diagnosis has values of "1" or "0", depending on whether or not that particular patient was diabetic. I converted the binary code into "Yes" and "No" so that I could create categorical variables. 
+
+```{R}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+heart <- read.csv(file = 'heart_failure_clinical_records_dataset.csv')
+heart <- heart %>% rename_all(function(x)str_replace(x,"_","")) %>% rename_all(function(x)str_replace(x,"_",""))
+glimpse(heart)
+```
+
+
+```{R}
+heart <- heart[-c(11,13)]
+heart <- heart %>% mutate_at(c("anaemia","diabetes","highbloodpressure","smoking","DEATHEVENT"),function(x)ifelse(x==0, "No","Yes"))
+head(heart)
+
+```
+
+#### 1. Tidying: Rearranging Wide/Long 
+
+Fortunately, the heart failure prediction dataset was tidy initially. For my project, I will untidy the dataset, specifically by combining the categorical risk factors into one column. There incidence will be determined as a "Yes" or "No" in the new "Incidence" column. The data will then be tidy-ed into a tidy dataset once again. 
+```{R}
+heart %>% pivot_longer(c("anaemia", "diabetes", "highbloodpressure", "smoking"), names_to="risk_factor", values_to="Incidence") -> heart_untidy 
+head(heart_untidy)
+heart_untidy %>% pivot_wider(names_from = "risk_factor", values_from="Incidence") -> heart_tidy
+head(heart_tidy)
+
+```
+
+    
+#### 2. Joining/Merging
+
+For this project, I will manually separate my dataset with the common variable "ID". I will perform a full join, using "ID" to rejoin the separated datasets. 
+```{R}
+heart %>% select("ID", 2:6) -> heart_part1
+head(heart_part1)
+heart %>% select("ID", 7:12) -> heart_part2
+head(heart_part2)
+full_join(heart_part1, heart_part2, by="ID") -> heartnew
+head(heartnew)
+```
+
+#### 3. Wrangling 
+  
+```{R}
+heart %>% group_by(DEATHEVENT) %>% select(-ID) %>% summarize_if(is.numeric, c(mean=mean, sd=sd, min=min, max=max)) %>% pivot_longer(-DEATHEVENT) %>% separate(name, into = c("riskfactor", "stat"))
+heart %>% group_by(highbloodpressure) %>% select(-ID) %>% summarize_if(is.numeric, c(mean=mean, sd=sd, min=min, max=max)) %>% pivot_longer(-highbloodpressure) %>% separate(name, into = c("riskfactor", "stat")) 
+heart%>%mutate(creatininephosphokinaserisk = case_when(creatininephosphokinase>120 ~ "abnormal",                                           creatininephosphokinase<120 ~ "normal")) -> heartcprisk
+heartcprisk %>% select(diabetes, age, creatininephosphokinase, creatininephosphokinaserisk) %>% filter(diabetes=="Yes") %>% arrange(creatininephosphokinase) %>% count(creatininephosphokinaserisk)
+98/(98+27)
+heartcprisk %>% select(diabetes, age, creatininephosphokinase, creatininephosphokinaserisk) %>% filter(diabetes=="No") %>% arrange(creatininephosphokinase) %>% count(creatininephosphokinaserisk)
+124/(124+50)
+heartcprisk %>% filter(creatininephosphokinaserisk =="abnormal") %>% summarize(mean(creatininephosphokinase))
+```
+    The data revels that the average age for those who died as a result of heart failure was 65 and those who did not was 58. Perhaps this suggests that older age groups, along with other risk factors, are more likely to die due to heart disease. This can be supported by the finding that the mean values for creatinine phosphokinase levels, ejection fraction, and platelet count, are at abnormal levels for those who suffered a death event. Similar findings are presented when the data is grouped based on high blood pressure status. The mean age is greater for those suffering from high blood pressure, suggesting age as a risk factor. However, this does not carry over to creatinine phosphokinase levels, which are lower in the high blood pressure group. The mean ejection fractior is higher in the high blood pressure group, which is expected given the physiology of the heart. 
+    A new variable was created in order to assess the risk level posed by creatinine phoshokinase levels. This was based of the normal creatinine phoshokinase level, less than 120 mu/L. The average creatinine phosphokinase level for those in the abnormal group was 756 mu/L. Many people in my family suffer from diabetes, so I chose to assess the abnormality of creatinine phosphokinase levels between those who were or were not diabetic. Not surprisingly, there was a higher percentage of patients with abnormal creatinine phosphotase levels that were diabetic(78%) than those who were non-diabetic (71%).
+
+
+#### 4. Visualizing
+```{R}
+ggplot(heart, aes(x= age, y= platelets, color= DEATHEVENT)) + geom_point(size = 1) + scale_color_manual(values = c("Light Green", "Light Blue"))+ ggtitle("Platelet Count vs Age and Fatality") +  geom_smooth(method = "lm", se = F) + ylab("Platelet count (kiloplatelets/L)") + xlab("Age (years)") + scale_x_continuous(breaks = seq(from = 40, to = 95, by = 10)) + theme_minimal()
+
+ggplot(heart, aes(x = highbloodpressure, y = ejectionfraction, fill = highbloodpressure)) + geom_bar(aes(y = ejectionfraction), stat = "summary", fun = mean) + geom_errorbar(stat = "summary", aes(x = highbloodpressure, y = ejectionfraction), width = .20)  + ggtitle("Ejection Fraction (%) vs High Blood Pressure and Smoker Status ") + ylab("Ejection Fraction(%)") + xlab("High Blood Pressure") + scale_fill_brewer(palette = "Oranges") + facet_wrap(~smoking) +  theme_minimal()
+
+
+heart %>% select_if(is.numeric) %>% select(-ID)  %>% cor %>% as.data.frame %>% rownames_to_column("varA") %>% pivot_longer(-1,names_to="varB",values_to="correlation") %>%
+  ggplot(aes(varA,varB,fill=correlation)) + geom_tile()+ ggtitle("Correlation of Heart Disease Risk Factors") +
+scale_fill_gradient2(low="white",mid="red",high="dark red")+
+geom_text(aes(label=round(correlation,2)),color = "white", size = 4) + xlab("") + ylab("") + theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+```
+  The first graph explores the relationship between age and platelet count, whether or not a patient passed away due to heart disease. As age increases for patients who are living, the platelet count trends downward. As age increases for patients that ultimately pass away due to heart disease, platelet counts increase. An increased platelet count increases the likelihood of forming a blood clot. This is consistent with the findings in the wrangling section, as age is a risk factor for dying of heart disease.
+  The bar graph explores the relationship between ejection fraction and high blood pressure in smokers and non smokers. In the non-smoking group, the ejection rate between those with and without high blood pressure was virtually the same. However, in the smoking group, the ejection rate was slightly higher for those with high blood pressure. It appears that this is not a significant difference. This differs from what I expected to find, which was that the ejection rate in smokers would be lower due to the vasoconstrictive effects of smoking compounded with high blood pressure.
+  Finally, I created a correlation heat map to assess the correlation of incidence between two different risk factors. This map reveals that there are very weak correlations between the numeric variables. No definitive conclusions can be drawn from this map.
+
+    
+#### 5. Dimensionality Reduction
+
+```{R}
+library(cluster)
+pam_dat<-heart%>%select(ejectionfraction, creatininephosphokinase, age)
+sil_width<-vector()
+for(i in 2:10){  
+  pam_fit <- pam(pam_dat, k = i)  
+  sil_width[i] <- pam_fit$silinfo$avg.width  
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+pam1 <- pam_dat %>% scale %>% pam(k=2)
+pam1
+finalpam <- pam_dat %>% mutate(cluster=as.factor(pam1$clustering))
+ggplot(finalpam, aes(x=creatininephosphokinase,y=ejectionfraction, color=cluster))+geom_point() + ggtitle("Cluster Visualization") + xlab("Creatinine Phosphokinase mu/L") + ylab("Ejection Fraction (%)")
+heart%>%slice(pam1$id.med)
+plot(pam1, which=2)
+```
+I decided to use PAM in order to conduct a cluster analysis. I chose the variables ejectionfraction, creatininephosphokinase, and age. These are risk factors that I have explored previously and I have found that age increases the occurence of other risk factors of heart disease. I chose to use 2 clusters, as is supported by the findings of the silhouette plot. The silhouette width is .3, which indicates that the structure is weak and could be artificial. I continued with k=2 and plotted the two different clusters in a scatter plot. Not surprisingly, this did not produce exciting results. There was not a great distance between the clusters. Within the clusters, the datapoints were not tight together. The two mediods differed from each other in most respects, but both were diabetic. Due to the results of the silhouette width, it was not surprising that there were no signficant findings in my cluster analysis. Perhaps this is due to my variables of choice. Future analysis can include a variable for a risk-factor score. That way, we can compare risk factor readings to a specific risk-factor score instead of risk-factors compared to each other. 
+
