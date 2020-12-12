@@ -1,9 +1,25 @@
 ---
-title: Blog Post
+title: The Power of R and Python
 author: 'Sabrina Benitez'
 date: '2020-12-11'
 slug: blog-post
 categories: []
 tags: []
-description: ''
+description: ' '
 ---
+![](/post/2020-12-11-blog-post_files/nyc flights.jpg)
+
+##
+Using the skills I learned in my computational biology course at UT Austin, I will show a simple, yet effective, way to combine the power of R and Python. NYC is one of my favorite cities to visit. I admire how diverse the city is, as well as the hustle and bustle of people moving in and out every second! For this reason, I have decided to use a dataset that holds flight data from the three NYC area airports from 2013. Specifically, I will be looking at flight data from the JFK airport. As a lover of travel(always looking for ways to add miles), I will find the mean distance for flights leaving JFK in 2013.
+
+```{R}
+library(nycflights13)
+library(tidyverse)
+library(reticulate)
+flights<-flights
+flightsjfk <- flights %>% filter(origin == "JFK")
+```
+
+```{python}
+r.flightsjfk.distance.mean()
+```
