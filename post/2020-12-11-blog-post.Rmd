@@ -9,7 +9,7 @@ description: ' '
 ---
 ![](/post/2020-12-11-blog-post_files/nyc flights.jpg)
 
-##
+##NYC Flights
 Using the skills I learned in my computational biology course at UT Austin, I will show a simple, yet effective, way to combine the power of R and Python. NYC is one of my favorite cities to visit. I admire how diverse the city is, as well as the hustle and bustle of people moving in and out every second! For this reason, I have decided to use a dataset that holds flight data from the three NYC area airports from 2013. Specifically, I will be looking at flight data from the JFK airport. As a lover of travel(always looking for ways to add miles), I will find the mean distance for flights leaving JFK in 2013.
 
 ```{R}
@@ -19,7 +19,20 @@ library(reticulate)
 flights<-flights
 flightsjfk <- flights %>% filter(origin == "JFK")
 ```
-
 ```{python}
 r.flightsjfk.distance.mean()
 ```
+
+The average distance out of JFK is 1266 miles! Notice how we used BOTH R and Python functions to come to this conclusion. 
+
+##Using reticulate to combine R and Python
+Using reticulate, we can show how R and Python can communicate and share information across code chunks!
+```{R}
+Ilove <- "If I can make it there,"
+```
+
+```{python}
+NY="I'm gonna make it anywhere!"
+print(r.Ilove,NY)
+```
+

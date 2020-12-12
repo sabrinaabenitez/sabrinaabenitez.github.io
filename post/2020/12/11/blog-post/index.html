@@ -76,8 +76,8 @@
 <img src="../../../../../post/2020-12-11-blog-post_files/nyc%20flights.jpg" />
 
 </div>
-<div id="section" class="section level2">
-<h2></h2>
+<div id="nyc-flights" class="section level2">
+<h2>NYC Flights</h2>
 <p>Using the skills I learned in my computational biology course at UT Austin, I will show a simple, yet effective, way to combine the power of R and Python. NYC is one of my favorite cities to visit. I admire how diverse the city is, as well as the hustle and bustle of people moving in and out every second! For this reason, I have decided to use a dataset that holds flight data from the three NYC area airports from 2013. Specifically, I will be looking at flight data from the JFK airport. As a lover of travel(always looking for ways to add miles), I will find the mean distance for flights leaving JFK in 2013.</p>
 <pre class="r"><code>library(nycflights13)
 library(tidyverse)</code></pre>
@@ -94,6 +94,15 @@ flights&lt;-flights
 flightsjfk &lt;- flights %&gt;% filter(origin == &quot;JFK&quot;)</code></pre>
 <pre class="python"><code>r.flightsjfk.distance.mean()</code></pre>
 <pre><code>## 1266.249076645189</code></pre>
+<p>The average distance out of JFK is 1266 miles! Notice how we used BOTH R and Python functions to come to this conclusion.</p>
+</div>
+<div id="using-reticulate-to-combine-r-and-python" class="section level2">
+<h2>Using reticulate to combine R and Python</h2>
+<p>Using reticulate, we can show how R and Python can communicate and share information across code chunks!</p>
+<pre class="r"><code>Ilove &lt;- &quot;If I can make it there,&quot;</code></pre>
+<pre class="python"><code>NY=&quot;I&#39;m gonna make it anywhere!&quot;
+print(r.Ilove,NY)</code></pre>
+<pre><code>## If I can make it there, I&#39;m gonna make it anywhere!</code></pre>
 </div>
 
             
